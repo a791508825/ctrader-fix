@@ -1,7 +1,11 @@
-use crate::types::{Config, Field, OrderType, Side, SubID};
+use crate::types::{Config, DELIMITER, Field, OrderType, Side, SubID};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use base64::alphabet::STANDARD;
+use hmac::digest::KeyInit;
+use hmac::Mac;
+use serde_json::json;
 use crate::HmacSHA256Base64Utils;
 use crate::HmacSHA256Base64Utils::sign;
 
@@ -148,19 +152,19 @@ pub trait RequestMessage: Send {
         config: &Config,
     ) -> String {
         let body = self.get_body(delimiter, config);
-        let header = self.get_header(
-            sub_id,
-            body.as_ref().map(|s| s.len()).unwrap_or(0),
-            sequence_number,
-            delimiter,
-            config,
-        );
-        let header_and_body = match body {
-            Some(body) => format!("{}{}{}{}", header, delimiter, body, delimiter),
-            None => format!("{}{}", header, delimiter),
-        };
-        let trailer = self.get_trailer(&header_and_body);
-        format!("{}{}{}", header_and_body, trailer, delimiter)
+        // let header = self.get_header(
+        //     sub_id,
+        //     body.as_ref().map(|s| s.len()).unwrap_or(0),
+        //     sequence_number,
+        //     delimiter,
+        //     config,
+        // );
+        // let header_and_body = match body {
+        //     Some(body) => format!("{}{}{}{}", header, delimiter, body, delimiter),
+        //     None => format!("{}{}", header, delimiter),
+        // };
+        // let trailer = self.get_trailer(&header_and_body);
+        format!("9=FIX.4.2{}{}{}", DELIMITER, body.unwrap(), DELIMITER)
     }
 
     fn get_header(
@@ -171,16 +175,16 @@ pub trait RequestMessage: Send {
         delimiter: &str,
         config: &Config,
     ) -> String {
-        let fields = vec![
-            format_field(Field::MsgType, self.get_message_type()),
-            format_field(Field::SenderCompID, &config.sender_comp_id),
-            format_field(Field::TargetCompID, "Coinbase"),
-            format_field(Field::MsgSeqNum, sequence_number),
-            format_field(Field::SendingTime, Utc::now().format("%Y%m%d-%H:%M:%S")),
-        ];
-        let fields_joined = fields.join(delimiter);
+        // let fields = vec![
+        //     format_field(Field::MsgType, self.get_message_type()),
+        //     format_field(Field::SenderCompID, &config.sender_comp_id),
+        //     format_field(Field::TargetCompID, "Coinbase"),
+        //     format_field(Field::MsgSeqNum, sequence_number),
+        //     format_field(Field::SendingTime, Utc::now().format("%Y%m%d-%H:%M:%S")),
+        // ];
+        // let fields_joined = fields.join(delimiter);
         format!(
-            "8=FIXT.1.1{}9={}{}{}",
+            "8=FIX.4.2{}9={}{}{}",
             delimiter,
             len_body + fields_joined.len() + 2,
             delimiter,
@@ -222,27 +226,43 @@ impl LogonReq {
 impl RequestMessage for LogonReq {
     fn get_body(&self, delimiter: &str, config: &Config) -> Option<String> {
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH);
-        let stamp = now.unwrap_or_else(|_| Duration::new(0, 0));
+        let time = Utc::now().format("%Y%m%d-%H:%M:%S.%3f");
+        let mut prehash = vec![
+            Utc::now().format("%Y%m%d-%H:%M:%S.%3f"),
+            self.get_message_type(),
+            1,
+            config.sender_comp_id,
+            "Coinbase",
+            config.password,
+        ];
+        let prehash: String = prehash.join("\x01");
 
-        let time = stamp.as_secs().to_string();
-        let sign = HmacSHA256Base64Utils::sign_cb(&time, "GET", "/users/self/verify", "", "", "7gxftlq6C/ExAgADC+aGWpB2rIXzE6Pvi9GBTI5jDALtNMB8CZVye16Fn60zTJnchhHsljZjdNpL8/T+kqziJg==");
+        let mut mac =
+            crate::HmacSHA256Base64Utils::HmacSha256::new_from_slice(STANDARD.decode(secret).unwrap().as_slice()).expect("HMAC can take key of any size");
+        mac.update(prehash.as_bytes());
+        let result = mac.finalize();
+        let sign = STANDARD.encode(result.into_bytes());
+
         let mut fields = vec![
+            format_field(Field::BeginString, "FIX.4.2"),
+            format_field(Field::SenderCompID, &config.sender_comp_id),
+            format_field(Field::TargetCompID, "Coinbase"),
+            format_field(Field::MsgType, self.get_message_type()),
             format_field(Field::MsgSeqNum, 1),
             format_field(Field::EncryptMethod, self.encryption_scheme),
             format_field(Field::HeartBtInt, config.heart_beat),
-            format_field(Field::Username, &config.username),
+            // format_field(Field::Username, &config.username),
             format_field(Field::Password, &config.password),
             format_field(Field::RawData, &sign),
-            format_field(Field::RawDataLength, &sign.bytes().len()),
         ];
 
-        match self.reset_seq_num {
-            Some(true) => {
-                fields.push("141=Y".to_string());
-                fields.push("1137=9".to_string());
-            } // Field::ResetSeqNumFlag
-            _ => {}
-        }
+        // match self.reset_seq_num {
+        //     Some(true) => {
+        //         fields.push("141=Y".to_string());
+        //         fields.push("1137=9".to_string());
+        //     } // Field::ResetSeqNumFlag
+        //     _ => {}
+        // }
 
         Some(fields.join(delimiter))
     }

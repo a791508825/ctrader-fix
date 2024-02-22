@@ -8,7 +8,7 @@ use sha2::{Sha256, Sha384};
 
 pub struct HmacSHA256Base64Utils {}
 
-type HmacSha256 = Hmac<Sha256>;
+pub type HmacSha256 = Hmac<Sha256>;
 type HmacSha384 = Hmac<Sha384>;
 type HmacSha512 = Hmac<Sha512>;
 
