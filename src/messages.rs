@@ -1,6 +1,9 @@
 use crate::types::{Config, Field, OrderType, Side, SubID};
 use chrono::Utc;
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
+use crate::HmacSHA256Base64Utils;
+use crate::HmacSHA256Base64Utils::sign;
 
 // Response
 #[derive(Debug, Clone)]
@@ -39,9 +42,9 @@ impl ResponseMessage {
     pub fn matching_field_value(&self, msg_type: &str, field: Field, value: &str) -> bool {
         (self.get_message_type() == msg_type)
             && (self
-                .get_field_value(field)
-                .map(|v| v == value)
-                .unwrap_or(false))
+            .get_field_value(field)
+            .map(|v| v == value)
+            .unwrap_or(false))
     }
 
     pub fn get_field_value(&self, field: Field) -> Option<String> {
@@ -171,15 +174,13 @@ pub trait RequestMessage: Send {
         let fields = vec![
             format_field(Field::MsgType, self.get_message_type()),
             format_field(Field::SenderCompID, &config.sender_comp_id),
-            format_field(Field::TargetCompID, "CSERVER"),
-            format_field(Field::TargetSubID, sub_id.to_string()),
-            format_field(Field::SenderSubID, sub_id.to_string()),
+            format_field(Field::TargetCompID, "Coinbase"),
             format_field(Field::MsgSeqNum, sequence_number),
             format_field(Field::SendingTime, Utc::now().format("%Y%m%d-%H:%M:%S")),
         ];
         let fields_joined = fields.join(delimiter);
         format!(
-            "8=FIX.4.4{}9={}{}{}",
+            "8=FIXT.1.1{}9={}{}{}",
             delimiter,
             len_body + fields_joined.len() + 2,
             delimiter,
@@ -215,16 +216,25 @@ impl LogonReq {
 
 impl RequestMessage for LogonReq {
     fn get_body(&self, delimiter: &str, config: &Config) -> Option<String> {
+        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH);
+        let stamp = now.unwrap_or_else(|_| Duration::new(0, 0));
+
+        let time = stamp.as_secs().to_string();
+        let sign = HmacSHA256Base64Utils::sign_cb(&time, "GET", "/users/self/verify", "", "", "7gxftlq6C/ExAgADC+aGWpB2rIXzE6Pvi9GBTI5jDALtNMB8CZVye16Fn60zTJnchhHsljZjdNpL8/T+kqziJg==");
         let mut fields = vec![
+            format_field(Field::MsgSeqNum, 1),
             format_field(Field::EncryptMethod, self.encryption_scheme),
             format_field(Field::HeartBtInt, config.heart_beat),
             format_field(Field::Username, &config.username),
             format_field(Field::Password, &config.password),
+            format_field(Field::RawData, &sign),
+            format_field(Field::RawDataLength, &sign.bytes().len()),
         ];
 
         match self.reset_seq_num {
             Some(true) => {
                 fields.push("141=Y".to_string());
+                fields.push("1137=9".to_string());
             } // Field::ResetSeqNumFlag
             _ => {}
         }
@@ -619,6 +629,7 @@ pub struct OrderCancelReq {
     pub order_id: Option<String>,
     pub cl_ord_id: String,
 }
+
 impl OrderCancelReq {
     pub fn new(orig_cl_ord_id: String, order_id: Option<String>, cl_ord_id: String) -> Self {
         Self {
@@ -628,6 +639,7 @@ impl OrderCancelReq {
         }
     }
 }
+
 impl RequestMessage for OrderCancelReq {
     fn get_body(&self, delimiter: &str, _config: &Config) -> Option<String> {
         let mut fields = vec![
@@ -756,6 +768,7 @@ impl RequestMessage for SecurityListReq {
 mod tests {
     use super::ResponseMessage;
     use crate::types::{Field, DELIMITER};
+
     #[test]
     fn test_parse_repeating_group_spot_market() {
         let res = "8=FIX.4.4|9=134|35=W|34=2|49=CSERVER|50=QUOTE|52=20170117-10:26:54.630|56=live.theBroker.12345|57=any_string|55=1|268=2|269=0|270=1.06625|269=1|270=1.0663|10=118|".to_string().replace("|", DELIMITER);
@@ -791,6 +804,7 @@ mod tests {
             assert!(group.contains_key(&Field::MDEntryType));
         }
     }
+
     #[test]
     fn test_parse_repeating_group_market_incre() {
         let res = "8=FIX.4.4|9=376|35=X|34=3|49=CSERVER|50=QUOTE|52=20170117-11:13:44.555|56=live.theBroker.12345|57=any_string|268=8|279=0|269=0|278=7491|55=1|270=1.06897|271=1000000|279=0|269=0|278=7490|55=1|270=1.06898|271=1000000|279=0|269=0|278=7489|55=1|270=1.06874|271=32373000|279=0|269=1|278=7496|55=1|270=1.06931|271=34580000|279=2|278=7477|55=1|279=2|278=7468|55=1|279=2|278=7467|55=1|279=2|278=7484|55=1|10=192|

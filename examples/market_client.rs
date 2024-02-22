@@ -1,9 +1,6 @@
-use cfix::{
-    types::{ConnectionHandler, DepthPrice, IncrementalRefresh, MarketDataHandler, SpotPrice},
-    MarketClient,
-};
+use cfix::{types::{ConnectionHandler, DepthPrice, IncrementalRefresh, MarketDataHandler, SpotPrice}, MarketClient, HmacSHA256Base64Utils};
 use std::{collections::HashMap, env, error::Error, sync::Arc};
-
+use cfix::HmacSHA256Base64Utils::sign;
 // Usage example:
 //
 
@@ -63,10 +60,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // env_logger::init();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
-    let host = env::var("CTRADER_FIX_HOST").unwrap();
-    let username = env::var("CTRADER_FIX_USERNAME").unwrap();
-    let password = env::var("CTRADER_FIX_PASSWORD").unwrap();
-    let sender_comp_id = env::var("CTRADER_FIX_SENDERCOMPID").unwrap();
+    let host = "fix-md.exchange.coinbase.com".to_string();
+    let username = "test".to_string();
+    let password = "7t6oz9lezfm".to_string();
+    let sender_comp_id = "9b695942ca7f212563b6e27e6229b2bf".to_string();
 
     let handler = Arc::new(Handler {});
     let mut client = MarketClient::new(host, username, password, sender_comp_id, None);
@@ -74,6 +71,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     client.register_market_handler_arc(handler.clone());
 
     // connect and logon
+    // let time = get_second().to_string();
+    // let sign = HmacSHA256Base64Utils::sign_cb(&time, "GET", "/users/self/verify", "", "", "7gxftlq6C/ExAgADC+aGWpB2rIXzE6Pvi9GBTI5jDALtNMB8CZVye16Fn60zTJnchhHsljZjdNpL8/T+kqziJg==");
     client.connect().await?;
     if client.is_connected() {
         let symbol_id = 11;
@@ -173,3 +172,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+

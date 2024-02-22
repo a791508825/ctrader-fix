@@ -487,6 +487,9 @@ pub enum Field {
     GuaranteedSL = 1006,
     SymbolName = 1007,
     SymbolDigits = 1008,
+    RawData = 96,
+    RawDataLength = 95,
+
 }
 impl std::fmt::Display for Field {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

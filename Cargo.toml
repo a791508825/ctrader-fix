@@ -23,7 +23,10 @@ num_enum = "0.6"
 log = "0.4"
 thiserror = "1.0"
 uuid = {version = "1.3", features = ["v4", "fast-rng"]}
-
+base64 = "0.21.1"
+sha2 = "0.10.6"
+hmac = "0.12.1"
+hex = "0.4.3"
 
 [features]
 default = ["async_std_default"]

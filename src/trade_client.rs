@@ -27,6 +27,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use crate::HmacSHA256Base64Utils::sign;
 
 #[derive(Debug)]
 struct TimeoutItem<T> {

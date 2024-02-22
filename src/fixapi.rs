@@ -26,6 +26,7 @@ use crate::{
     socket::Socket,
     types::{MarketCallback, TradeCallback},
 };
+use crate::HmacSHA256Base64Utils::sign;
 
 pub struct FixApi {
     config: Config,
@@ -127,9 +128,9 @@ impl FixApi {
         let mut socket = Socket::connect(
             self.config.host.as_str(),
             if self.sub_id == SubID::QUOTE {
-                5201
+                6121
             } else {
-                5202
+                6121
             },
             sender,
         )

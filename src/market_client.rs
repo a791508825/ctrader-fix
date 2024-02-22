@@ -16,6 +16,7 @@ use crate::{
         MarketDataHandler, MarketType, SpotPrice,
     },
 };
+use crate::HmacSHA256Base64Utils::sign;
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 enum RequestState {

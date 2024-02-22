@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     client.register_trade_handler_arc(handler.clone());
 
     // connect and logon
-    client.connect().await?;
+    client.connect("".to_string()).await?;
     if client.is_connected() {
         let res = client.fetch_security_list().await?;
         for symbolinfo in res.into_iter() {
