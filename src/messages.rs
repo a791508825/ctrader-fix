@@ -172,25 +172,25 @@ pub trait RequestMessage: Send {
         config: &Config,
     ) -> String {
         let fields = vec![
-            // format_field(Field::MsgType, self.get_message_type()),
+            format_field(Field::MsgType, self.get_message_type()),
             format_field(Field::SenderCompID, &config.sender_comp_id),
             format_field(Field::TargetCompID, "Coinbase"),
-            // format_field(Field::MsgSeqNum, sequence_number),
-            // format_field(Field::SendingTime, Utc::now().to_rfc3339()),
+            format_field(Field::MsgSeqNum, sequence_number),
+            format_field(Field::SendingTime, Utc::now().to_rfc3339()),
         ];
         let fields_joined = fields.join(delimiter);
-        // format!(
-        //     "8=FIXT.1.1{}9={}{}{}",
-        //     delimiter,
-        //     len_body + fields_joined.len() + 2,
-        //     delimiter,
-        //     fields_joined
-        // )
         format!(
-            "8=FIXT.1.1{}{}",
+            "8=FIXT.1.1{}9={}{}{}",
+            delimiter,
+            len_body + fields_joined.len() + 2,
             delimiter,
             fields_joined
         )
+        // format!(
+        //     "8=FIXT.1.1{}{}",
+        //     delimiter,
+        //     fields_joined
+        // )
     }
 
     fn get_trailer(&self, header_and_body: &str) -> String {
@@ -238,8 +238,8 @@ impl RequestMessage for LogonReq {
 
         match self.reset_seq_num {
             Some(true) => {
-                // fields.push("141=Y".to_string());
-                // fields.push("1137=9".to_string());
+                fields.push("141=Y".to_string());
+                fields.push("1137=9".to_string());
             } // Field::ResetSeqNumFlag
             _ => {}
         }
