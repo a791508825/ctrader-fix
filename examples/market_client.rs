@@ -1,5 +1,6 @@
 use cfix::{types::{ConnectionHandler, DepthPrice, IncrementalRefresh, MarketDataHandler, SpotPrice}, MarketClient, HmacSHA256Base64Utils};
 use std::{collections::HashMap, env, error::Error, sync::Arc};
+use chrono::Utc;
 use cfix::HmacSHA256Base64Utils::sign;
 // Usage example:
 //
