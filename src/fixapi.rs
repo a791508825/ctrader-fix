@@ -128,9 +128,9 @@ impl FixApi {
         let mut socket = Socket::connect(
             self.config.host.as_str(),
             if self.sub_id == SubID::QUOTE {
-                6121
+                4198
             } else {
-                6121
+                4198
             },
             sender,
         )

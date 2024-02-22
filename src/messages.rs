@@ -2,12 +2,13 @@ use crate::types::{Config, DELIMITER, Field, OrderType, Side, SubID};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use base64::alphabet::STANDARD;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use hmac::digest::KeyInit;
-use hmac::Mac;
+use hmac::{Hmac, Mac};
 use serde_json::json;
-use crate::HmacSHA256Base64Utils;
-use crate::HmacSHA256Base64Utils::sign;
+use sha2::Sha256;
+use crate::HmacSHA256Base64Utils::get_sign;
 
 // Response
 #[derive(Debug, Clone)]
@@ -175,6 +176,7 @@ pub trait RequestMessage: Send {
         delimiter: &str,
         config: &Config,
     ) -> String {
+        "".to_string()
         // let fields = vec![
         //     format_field(Field::MsgType, self.get_message_type()),
         //     format_field(Field::SenderCompID, &config.sender_comp_id),
@@ -183,13 +185,13 @@ pub trait RequestMessage: Send {
         //     format_field(Field::SendingTime, Utc::now().format("%Y%m%d-%H:%M:%S")),
         // ];
         // let fields_joined = fields.join(delimiter);
-        format!(
-            "8=FIX.4.2{}9={}{}{}",
-            delimiter,
-            len_body + fields_joined.len() + 2,
-            delimiter,
-            fields_joined
-        )
+        // format!(
+        //     "8=FIX.4.2{}9={}{}{}",
+        //     delimiter,
+        //     len_body + fields_joined.len() + 2,
+        //     delimiter,
+        //     fields_joined
+        // )
         // format!(
         //     "8=FIXT.1.1{}{}",
         //     delimiter,
@@ -223,25 +225,24 @@ impl LogonReq {
     }
 }
 
+type HmacSha256 = Hmac<Sha256>;
+
 impl RequestMessage for LogonReq {
     fn get_body(&self, delimiter: &str, config: &Config) -> Option<String> {
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH);
         let time = Utc::now().format("%Y%m%d-%H:%M:%S.%3f");
         let mut prehash = vec![
-            Utc::now().format("%Y%m%d-%H:%M:%S.%3f"),
-            self.get_message_type(),
-            1,
-            config.sender_comp_id,
-            "Coinbase",
-            config.password,
+            Utc::now().format("%Y%m%d-%H:%M:%S.%3f").to_string(),
+            self.get_message_type().to_string(),
+            "1".to_string(),
+            config.sender_comp_id.to_string(),
+            "Coinbase".to_string(),
+            config.password.to_string(),
         ];
         let prehash: String = prehash.join("\x01");
+        let secret = "7gxftlq6C/ExAgADC+aGWpB2rIXzE6Pvi9GBTI5jDALtNMB8CZVye16Fn60zTJnchhHsljZjdNpL8/T+kqziJg==".to_string();
 
-        let mut mac =
-            crate::HmacSHA256Base64Utils::HmacSha256::new_from_slice(STANDARD.decode(secret).unwrap().as_slice()).expect("HMAC can take key of any size");
-        mac.update(prehash.as_bytes());
-        let result = mac.finalize();
-        let sign = STANDARD.encode(result.into_bytes());
+        let sign = get_sign(prehash, secret);
 
         let mut fields = vec![
             format_field(Field::BeginString, "FIX.4.2"),

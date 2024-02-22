@@ -111,6 +111,14 @@ pub fn sign_cb(
     STANDARD.encode(result.into_bytes())
 }
 
+pub fn get_sign(pre_hash:String,secret:String)->String{
+    let mut mac =
+        HmacSha256::new_from_slice(STANDARD.decode(secret).unwrap().as_slice()).expect("HMAC can take key of any size");
+    mac.update(pre_hash.as_bytes());
+    let result = mac.finalize();
+    STANDARD.encode(result.into_bytes())
+}
+
 pub fn map_to_query_string(mut temp: String, map: &HashMap<&str, String>) -> String {
     // if !map.is_empty() {
     for (key, value) in map {
