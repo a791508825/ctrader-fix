@@ -7,7 +7,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::messages::ResponseMessage;
 
-pub const DELIMITER: &str = "\u{1}";
+// pub const DELIMITER: &str = "\u{1}";
+pub const DELIMITER: &str = "|";
 
 #[async_trait]
 pub trait ConnectionHandler {
