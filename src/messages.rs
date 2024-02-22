@@ -176,7 +176,7 @@ pub trait RequestMessage: Send {
             format_field(Field::SenderCompID, &config.sender_comp_id),
             format_field(Field::TargetCompID, "Coinbase"),
             format_field(Field::MsgSeqNum, sequence_number),
-            format_field(Field::SendingTime, Utc::now().to_rfc3339()),
+            format_field(Field::SendingTime, Utc::now().format("%Y%m%d-%H:%M:%S")),
         ];
         let fields_joined = fields.join(delimiter);
         format!(
