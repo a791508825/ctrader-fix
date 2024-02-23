@@ -55,13 +55,15 @@ impl MarketDataHandler for Handler {
     }
 }
 
+
+
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().ok();
     // env_logger::init();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
-    let host = "fix-md.exchange.coinbase.com".to_string();
+    let host = "fix-ord.exchange.coinbase.com".to_string();
     let username = "test".to_string();
     let password = "7t6oz9lezfm".to_string();
     let sender_comp_id = "9b695942ca7f212563b6e27e6229b2bf".to_string();
@@ -70,10 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut client = MarketClient::new(host, username, password, sender_comp_id, None);
     client.register_connection_handler_arc(handler.clone());
     client.register_market_handler_arc(handler.clone());
-
     // connect and logon
-    // let time = get_second().to_string();
-    // let sign = HmacSHA256Base64Utils::sign_cb(&time, "GET", "/users/self/verify", "", "", "7gxftlq6C/ExAgADC+aGWpB2rIXzE6Pvi9GBTI5jDALtNMB8CZVye16Fn60zTJnchhHsljZjdNpL8/T+kqziJg==");
     client.connect().await?;
     if client.is_connected() {
         let symbol_id = 11;

@@ -8,7 +8,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use crate::messages::ResponseMessage;
 
 // pub const DELIMITER: &str = "\u{1}";
-pub const DELIMITER: &str = "|";
+pub const DELIMITER: &str = "\x01";
 
 #[async_trait]
 pub trait ConnectionHandler {
@@ -490,6 +490,7 @@ pub enum Field {
     SymbolDigits = 1008,
     RawData = 96,
     RawDataLength = 95,
+    DefaultApplVerID = 1137,
 
 }
 impl std::fmt::Display for Field {

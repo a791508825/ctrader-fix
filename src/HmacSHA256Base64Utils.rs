@@ -8,7 +8,7 @@ use sha2::{Sha256, Sha384};
 
 pub struct HmacSHA256Base64Utils {}
 
-type HmacSha256 = Hmac<Sha256>;
+pub type HmacSha256 = Hmac<Sha256>;
 type HmacSha384 = Hmac<Sha384>;
 type HmacSha512 = Hmac<Sha512>;
 
@@ -104,6 +104,14 @@ pub fn sign_cb(
     if !body.is_empty() {
         pre_hash.push_str(&body);
     }
+    let mut mac =
+        HmacSha256::new_from_slice(STANDARD.decode(secret).unwrap().as_slice()).expect("HMAC can take key of any size");
+    mac.update(pre_hash.as_bytes());
+    let result = mac.finalize();
+    STANDARD.encode(result.into_bytes())
+}
+
+pub fn get_sign(pre_hash:String,secret:String)->String{
     let mut mac =
         HmacSha256::new_from_slice(STANDARD.decode(secret).unwrap().as_slice()).expect("HMAC can take key of any size");
     mac.update(pre_hash.as_bytes());

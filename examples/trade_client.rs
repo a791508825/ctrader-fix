@@ -32,10 +32,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // env_logger::init();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
-    let host = env::var("CTRADER_FIX_HOST").unwrap();
-    let username = env::var("CTRADER_FIX_USERNAME").unwrap();
-    let password = env::var("CTRADER_FIX_PASSWORD").unwrap();
-    let sender_comp_id = env::var("CTRADER_FIX_SENDERCOMPID").unwrap();
+    let host = "fix-ord.exchange.coinbase.com".to_string();
+    let username = "test".to_string();
+    let password = "7t6oz9lezfm".to_string();
+    let sender_comp_id = "9b695942ca7f212563b6e27e6229b2bf".to_string();
 
     let handler = Arc::new(Handler {});
     let mut client = TradeClient::new(host, username, password, sender_comp_id, None);
